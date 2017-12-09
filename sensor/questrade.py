@@ -30,8 +30,14 @@ ATTR_MARKET_VALUE = 'market_value'
 ATTR_TOTAL_EQUITY = 'total_equity'
 ATTR_BUYING_POWER = 'buying_power'
 ATTR_MAINTENANCE_EXCESS = 'maintenance_excess'
+ATTR_SOD_CASH = 'sod_cash'
+ATTR_SOD_MARKET_VALUE = 'sod_market_value'
+ATTR_SOD_TOTAL_EQUITY = 'sod_total_equity'
+ATTR_SOD_BUYING_POWER = 'sod_buying_power'
+ATTR_SOD_MAINTENANCE_EXCESS = 'sod_maintenance_excess'
 
-ICON = 'mdi:currency-usd'
+ICON_TRENDING_UP = 'mdi:trending-up'
+ICON_TRENDING_DOWN = 'mdi:trending-down'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_CLIENT_ID): cv.string,
@@ -109,6 +115,11 @@ class QuestradeSensor(Entity):
         self.total_equity = None
         self.buying_power = None
         self.maintenance_excess = None
+        self.sod_cash = None
+        self.sod_market_value = None
+        self.sod_total_equity = None
+        self.sod_buying_power = None
+        self.sod_maintenance_excess = None
 
     @property
     def name(self):
@@ -132,12 +143,20 @@ class QuestradeSensor(Entity):
             ATTR_TOTAL_EQUITY: self.total_equity,
             ATTR_BUYING_POWER: self.buying_power,
             ATTR_MAINTENANCE_EXCESS: self.maintenance_excess,
+            ATTR_SOD_CASH: self.sod_cash,
+            ATTR_SOD_MARKET_VALUE: self.sod_market_value,
+            ATTR_SOD_TOTAL_EQUITY: self.sod_total_equity,
+            ATTR_SOD_BUYING_POWER: self.sod_buying_power,
+            ATTR_SOD_MAINTENANCE_EXCESS: self.sod_maintenance_excess,
             ATTR_FRIENDLY_NAME: self._name,
         }
 
     @property
     def icon(self):
-        return ICON
+        if self.sod_total_equity is not None and self.total_equity is not None:
+            if self.total_equity < self.sod_total_equity:
+                return ICON_TRENDING_DOWN
+        return ICON_TRENDING_UP
 
     def update(self):
         response = self._client.get_account_balances(self.account_id)
@@ -150,3 +169,12 @@ class QuestradeSensor(Entity):
             self.total_equity = balance['totalEquity']
             self.buying_power = balance['buyingPower']
             self.maintenance_excess = balance['maintenanceExcess']
+        sod_balances = response['sodCombinedBalances']
+        for balance in sod_balances:
+            if balance['currency'] != self.currency:
+                continue
+            self.sod_cash = balance['cash']
+            self.sod_market_value = balance['marketValue']
+            self.sod_total_equity = balance['totalEquity']
+            self.sod_buying_power = balance['buyingPower']
+            self.sod_maintenance_excess = balance['maintenanceExcess']

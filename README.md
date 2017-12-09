@@ -26,3 +26,25 @@ Configuration variables:
   account attributes. Defaults to `CAD`.
 - **scan_interval** (Optional): The number of seconds between updates.
   Defaults to 60.
+
+#### Custom UI
+
+- Copy `custom_ui/state-card-custom-questrade.html` to
+  `/config/www/custom_ui/state-card-custom-questrade.html`.
+- In the `frontend:` section of the `configuration.yaml` file, use
+  `extra_html_url` to specify the URL to load.
+- In the `customize:` section add `custom_ui_state_card: state-card-custom-questrade`
+  for each account entity.
+
+Example:
+
+```yaml
+homeassistant:
+  frontend:
+    extra_html_url:
+      - /local/custom_ui/state-card-custom-questrade.html
+
+  customize:
+    sensor.questrade_12345678:
+      custom_ui_state_card: state-card-custom-questrade
+```

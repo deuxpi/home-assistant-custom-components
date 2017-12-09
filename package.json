@@ -1,0 +1,19 @@
+{
+  "name": "home-assistant-questrade",
+  "version": "1.0.0",
+  "description": "Custom UI for the Home Assistant Questrade component",
+  "dependencies": {
+    "eslint": "^4.13.0",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-html": "^4.0.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^6.0.2",
+    "eslint-plugin-react": "^7.5.1"
+  },
+  "scripts": {
+    "lint_js": "eslint custom_ui --ext js,html",
+    "test": "npm run lint_js"
+  },
+  "author": "Philippe Gauthier <philippe.gauthier@deuxpi.ca>",
+  "license": "Apache-2.0"
+}
