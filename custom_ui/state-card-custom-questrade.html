@@ -25,7 +25,7 @@
       <state-info state-obj="[[stateObj]]" in-dialog='[[inDialog]]'></state-info>
       <div class='state'>
         <div class='current'>
-          <span>[[stateObj.attributes.total_equity]]</span>
+          <span>[[formatCurrentValue(stateObj)]]</span>
         </div>
 
         <div class='change'>
@@ -48,6 +48,12 @@ class StateCardCustomQuestrade extends Polymer.Element {
         value: false,
       },
     };
+  }
+
+  formatCurrentValue(stateObj) {
+    const totalEquity = Number(stateObj.attributes.total_equity);
+    const currency = stateObj.attributes.unit_of_measurement;
+    return totalEquity.toLocaleString(undefined, { style: 'currency', currency: currency });
   }
 
   computeChange(stateObj) {
