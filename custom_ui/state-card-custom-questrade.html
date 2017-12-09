@@ -1,0 +1,70 @@
+<dom-module id="state-card-custom-questrade">
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+    <style>
+      :host {
+        @apply(--paper-font-body1);
+        line-height: 1.5;
+      }
+
+      .state {
+        margin-left: 16px;
+        text-align: right;
+      }
+
+      .current {
+        color: var(--primary-text-color);
+      }
+
+      .change {
+        color: var(--secondary-text-color);
+      }
+    </style>
+
+    <div class='horizontal justified layout'>
+      <state-info state-obj="[[stateObj]]" in-dialog='[[inDialog]]'></state-info>
+      <div class='state'>
+        <div class='current'>
+          <span>[[stateObj.attributes.total_equity]]</span>
+        </div>
+
+        <div class='change'>
+          <span>[[computeChange(stateObj)]]</span>
+        </div>
+      </div>
+    </div>
+  </template>
+</dom-module>
+
+<script>
+class StateCardCustomQuestrade extends Polymer.Element {
+  static get is() { return 'state-card-custom-questrade'; }
+
+  static get properties() {
+    return {
+      stateObj: Object,
+      inDialog: {
+        type: Boolean,
+        value: false,
+      },
+    };
+  }
+
+  computeChange(stateObj) {
+    let stateChange = '';
+
+    if (stateObj.attributes.sod_total_equity) {
+      const totalEquity = Number(stateObj.attributes.total_equity);
+      const sodTotalEquity = Number(stateObj.attributes.sod_total_equity);
+      const change = totalEquity - sodTotalEquity;
+      const percentageChange = change / sodTotalEquity;
+      stateChange = (change >= 0 ? '+' : '-') +
+        change.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ' +
+        '(' + percentageChange.toLocaleString(undefined, { style: 'percent', maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ')';
+    }
+
+    return stateChange;
+  }
+}
+customElements.define(StateCardCustomQuestrade.is, StateCardCustomQuestrade);
+</script>
