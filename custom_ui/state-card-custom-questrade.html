@@ -63,8 +63,8 @@ class StateCardCustomQuestrade extends Polymer.Element {
       const totalEquity = Number(stateObj.attributes.total_equity);
       const sodTotalEquity = Number(stateObj.attributes.sod_total_equity);
       const change = totalEquity - sodTotalEquity;
-      const percentageChange = change / sodTotalEquity;
-      stateChange = (change >= 0 ? '+' : '-') +
+      const percentageChange = Math.abs(change / sodTotalEquity);
+      stateChange = (change >= 0 ? '+' : '') +
         change.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ' +
         '(' + percentageChange.toLocaleString(undefined, { style: 'percent', maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ')';
     }
