@@ -48,3 +48,26 @@ homeassistant:
     sensor.questrade_12345678:
       custom_ui_state_card: state-card-custom-questrade
 ```
+
+
+### Teksavvy Data Usage
+
+#### Installation
+
+- Copy `sensor/teksavvy.py` to `/config/custom_components/sensor/teksavvy.py`.
+- Go to https://myaccount.teksavvy.com/ApiKey/ApiKeyManagement and create a
+  new customer portal API key.
+- Fill the following configuration:
+
+```yaml
+sensor:
+  - platform: teksavvy
+    api_key: <API key>
+    scan_interval: 900
+```
+
+Configuration variables:
+
+- **api_key** (Required): The Customer Portal API key.
+- **scan_interval** (Optional): The number of seconds between updates.
+  Defaults to 60.
