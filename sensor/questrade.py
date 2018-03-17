@@ -6,10 +6,11 @@ import time
 
 import voluptuous as vol
 
-from homeassistant.const import ATTR_FRIENDLY_NAME, CONF_CURRENCY
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.helpers.entity import Entity
+from homeassistant.const import CONF_CURRENCY
+from homeassistant.components.sensor import PLATFORM_SCHEMA, ENTITY_ID_FORMAT
+from homeassistant.helpers.entity import Entity, generate_entity_id
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.util.json import load_json, save_json
 
 REQUIREMENTS = ['requests==2.18.4']
@@ -100,12 +101,12 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     ]
     dev = []
     for account_id, name in accounts:
-        dev.append(QuestradeSensor(client, account_id, name, currency))
+        dev.append(QuestradeSensor(hass, client, account_id, name, currency))
     add_devices(dev, True)
 
 
 class QuestradeSensor(Entity):
-    def __init__(self, questrade_client, account_id, name, currency):
+    def __init__(self, hass: HomeAssistantType, questrade_client, account_id, name, currency):
         self._client = questrade_client
         self._name = name
         self.account_id = account_id
@@ -120,10 +121,11 @@ class QuestradeSensor(Entity):
         self.sod_total_equity = None
         self.sod_buying_power = None
         self.sod_maintenance_excess = None
+        self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "questrade_" + account_id, hass=hass)
 
     @property
     def name(self):
-        return 'questrade_%s' % self.account_id
+        return self._name
 
     @property
     def unit_of_measurement(self):
@@ -148,7 +150,6 @@ class QuestradeSensor(Entity):
             ATTR_SOD_TOTAL_EQUITY: self.sod_total_equity,
             ATTR_SOD_BUYING_POWER: self.sod_buying_power,
             ATTR_SOD_MAINTENANCE_EXCESS: self.sod_maintenance_excess,
-            ATTR_FRIENDLY_NAME: self._name,
         }
 
     @property
