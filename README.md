@@ -50,24 +50,24 @@ homeassistant:
 ```
 
 
-### Teksavvy Data Usage
+### Strava athlete statistics
 
 #### Installation
 
-- Copy `sensor/teksavvy.py` to `/config/custom_components/sensor/teksavvy.py`.
-- Go to https://myaccount.teksavvy.com/ApiKey/ApiKeyManagement and create a
-  new customer portal API key.
+- Copy `sensor/strava.py` to `/config/custom_components/sensor/strava.py`.
+- Copy the content of the `www` directory to `/config/www/`
+- Go to https://www.strava.com/settings/api and create a new App. Make sure the
+  **Authorization Callback Domain** matches the host name used by Home Assistant.
 - Fill the following configuration:
 
 ```yaml
 sensor:
-  - platform: teksavvy
-    api_key: <API key>
-    scan_interval: 900
+  - platform: strava
+    client_id: <App Client ID>
+    client_secret: <App Client Secret>
 ```
 
 Configuration variables:
 
-- **api_key** (Required): The Customer Portal API key.
-- **scan_interval** (Optional): The number of seconds between updates.
-  Defaults to 60.
+- **client_id** (Required): The Strava app client ID.
+- **client_secret** (Required): The Strava app client secret.
