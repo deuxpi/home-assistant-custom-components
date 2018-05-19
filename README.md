@@ -50,6 +50,28 @@ homeassistant:
 ```
 
 
+### Nokia Health (Withings) body measurements
+
+#### Installation
+
+- Copy `sensor/nokia_health.py` to `/config/custom_components/sensor/nokia_health.py`.
+- Copy the content of the `www` directory to `/config/www/`
+- Go to https://developer.health.nokia.com/partner/add to register a developer account and create a new app.
+- Fill the following configuration:
+
+```yaml
+sensor:
+  - platform: nokia_health
+    consumer_key: <Key ID>
+    consumer_secret: <Key Secret>
+```
+
+Configuration variables:
+
+- **consumer_key** (Required): The Nokia Health API key.
+- **consumer_secret** (Required): The Nokia Health API key secret.
+
+
 ### Strava athlete statistics
 
 #### Installation
