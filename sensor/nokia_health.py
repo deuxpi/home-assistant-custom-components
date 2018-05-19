@@ -1,6 +1,6 @@
-"""Home Assistant component for Nokia Health measurements."""
+"""Support for Nokia Health measurements."""
 import asyncio
-from datetime import timedelta
+import datetime
 import json
 import logging
 import os
@@ -9,12 +9,11 @@ from aiohttp import web
 import voluptuous as vol
 
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.sensor import (
-    ENTITY_ID_FORMAT, PLATFORM_SCHEMA)
+from homeassistant.components.sensor import ENTITY_ID_FORMAT, PLATFORM_SCHEMA
 from homeassistant.const import MASS_KILOGRAMS
 from homeassistant.core import callback
-from homeassistant.helpers.entity import Entity, async_generate_entity_id
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.typing import HomeAssistantType
 
 REQUIREMENTS = ['nokia==0.4.0']
@@ -22,7 +21,7 @@ DEPENDENCIES = ['http']
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(seconds=3600)
+SCAN_INTERVAL = datetime.timedelta(minutes=30)
 
 CONF_CONSUMER_KEY = 'consumer_key'
 CONF_CONSUMER_SECRET = 'consumer_secret'
@@ -99,9 +98,9 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 
         configurator = hass.components.configurator
         request_id = configurator.async_request_config(
-            'Nokia Health',
-            description='Authorization required for Nokia Health account.',
-            link_name='Authorize Home Assistant',
+            "Nokia Health",
+            description="Authorization required for Nokia Health account.",
+            link_name="Authorize Home Assistant",
             link_url=authorize_url,
             entity_picture='/local/images/logo_nokia_health_mate.png')
 
@@ -119,6 +118,7 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 
 class NokiaAuthCallbackView(HomeAssistantView):
     """Web view that handles OAuth authentication and redirection flow."""
+
     requires_auth = False
     url = '/api/nokia/callback'
     name = 'api:nokia:callback'
@@ -132,10 +132,10 @@ class NokiaAuthCallbackView(HomeAssistantView):
 
         if 'oauth_verifier' not in params:
             _LOGGER.error(
-                'Error authorizing Nokia: %s',
+                "Error authorizing to Nokia Health: %s",
                 params.get('error', 'invalid response'))
         elif DATA_CALLBACK not in hass.data:
-            _LOGGER.error('Configuration request not found')
+            _LOGGER.error("Configuration request not found")
         else:
             oauth_verifier = params['oauth_verifier']
             initialize_callback = hass.data[DATA_CALLBACK]
@@ -146,7 +146,9 @@ class NokiaAuthCallbackView(HomeAssistantView):
 
 class NokiaSensor(Entity):
     """Sensor component for Nokia Health measurements."""
+
     def __init__(self, hass: HomeAssistantType, nokia_client):
+        """Initialize the Nokia Health sensor."""
         self.hass = hass
         self._client = nokia_client
         self._measures = None
@@ -159,18 +161,22 @@ class NokiaSensor(Entity):
 
     @property
     def name(self):
+        """Return the name of the sensor."""
         return self._name
 
     @property
     def icon(self):
+        """Return the icon that will be shown in the interface."""
         return 'mdi:human'
 
     @property
     def unit_of_measurement(self):
+        """Return the unit appended to the state value in the interface."""
         return MASS_KILOGRAMS
 
     @property
     def state(self):
+        """Return the measurement from the sensor."""
         if self._measures is None:
             return 0
         return self._measures.weight
@@ -196,5 +202,5 @@ class NokiaSensor(Entity):
 
     @asyncio.coroutine
     def async_update(self):
-        """Update current athlete statistics."""
+        """Get the latest measurements from the Nokia Health API."""
         self._measures = (yield from self.async_get_measures())[0]
