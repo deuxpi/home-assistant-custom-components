@@ -1,0 +1,8 @@
+asynctest==0.12.2
+coveralls==1.2.0
+pytest-aiohttp==0.3.0
+pytest-cov==2.6.1
+pytest-sugar==0.9.2
+pytest==4.3.0
+
+nokia==1.2.0
