@@ -1,4 +1,4 @@
-"""Support for Nokia Health measurements."""
+"""Support for Withings measurements."""
 import asyncio
 import datetime
 import json
@@ -16,43 +16,54 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.typing import HomeAssistantType
 
-REQUIREMENTS = ['nokia==0.4.0']
+REQUIREMENTS = ['nokia==1.2.0']
 DEPENDENCIES = ['http']
 
 _LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = datetime.timedelta(minutes=30)
 
-CONF_CONSUMER_KEY = 'consumer_key'
+CONF_CLIENT_ID = 'client_id'
 CONF_CONSUMER_SECRET = 'consumer_secret'
 
-NOKIA_CONFIG_PATH = 'nokia.json'
+WITHINGS_CONFIG_PATH = 'withings.json'
 
-DATA_CALLBACK = 'nokia-callback'
+DATA_CALLBACK = 'withings-callback'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_CONSUMER_KEY): cv.string,
+    vol.Required(CONF_CLIENT_ID): cv.string,
     vol.Required(CONF_CONSUMER_SECRET): cv.string,
 })
 
 ATTR_WEIGHT = 'weight'
+ATTR_HEIGHT = 'height'
+ATTR_FAT_FREE_MASS = 'fat_free_mass'
 ATTR_FAT_RATIO = 'fat_ratio'
+ATTR_FAT_MASS_WEIGHT = 'fat_mass_weight'
+ATTR_DIASTOLIC_BLOOD_PRESSURE = 'diastolic_blood_pressure'
+ATTR_SYSSTOLIC_BLOOD_PRESSURE = 'sysstolic_blood_pressure'
+ATTR_HEART_PULSE = 'heart_pulse'
+ATTR_TEMPERATURE = 'temperature'
+ATTR_SPO2 = 'spo2'
+ATTR_BODY_TEMPERATURE = 'body_temperature'
+ATTR_SKIN_TEMPERATURE = 'skin_temperature'
 ATTR_MUSCLE_MASS = 'muscle_mass'
 ATTR_HYDRATION = 'hydration'
 ATTR_BONE_MASS = 'bone_mass'
+ATTR_PULSE_WAVE_VELOCITY = 'pulse_wave_velocity'
 
 
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
-    """Authenticate to the Nokia Health API."""
+    """Authenticate to the Withings API."""
     from nokia import NokiaApi, NokiaAuth, NokiaCredentials
 
-    hass.http.register_view(NokiaAuthCallbackView())
+    hass.http.register_view(WithingsAuthCallbackView())
 
-    consumer_key = config.get(CONF_CONSUMER_KEY)
+    client_id = config.get(CONF_CLIENT_ID)
     consumer_secret = config.get(CONF_CONSUMER_SECRET)
 
-    config_path = hass.config.path(NOKIA_CONFIG_PATH)
+    config_path = hass.config.path(WITHINGS_CONFIG_PATH)
 
     @asyncio.coroutine
     def _read_config():
@@ -60,54 +71,63 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
             return None
         with open(config_path, 'r') as auth_file:
             config = json.load(auth_file)
-            if config['consumer_key'] == consumer_key:
+            if config.get('client_id') == client_id:
                 return config
 
     @asyncio.coroutine
     def _write_config(creds):
         with open(config_path, 'w') as auth_file:
             json.dump({
-                'consumer_key': consumer_key,
+                'client_id': client_id,
                 'access_token': creds.access_token,
-                'access_token_secret': creds.access_token_secret,
+                'refresh_token': creds.refresh_token,
+                'token_type': creds.token_type,
+                'token_expiry': creds.token_expiry,
                 'user_id': creds.user_id,
             }, auth_file)
 
     @asyncio.coroutine
     def _add_device(creds):
         client = NokiaApi(creds)
-        nokia = NokiaSensor(hass, client)
-        yield from nokia.async_update()
-        return async_add_devices([nokia])
+        withings = WithingsSensor(hass, client)
+        yield from withings.async_update()
+        return async_add_devices([withings])
 
     config = yield from _read_config()
     if config is not None:
         creds = NokiaCredentials(
-            config['access_token'],
-            config['access_token_secret'],
-            consumer_key,
-            consumer_secret,
-            config['user_id']
+            client_id=client_id,
+            consumer_secret=consumer_secret,
+            access_token=config['access_token'],
+            token_expiry=config['token_expiry'],
+            token_type=config['token_type'],
+            refresh_token=['refresh_token'],
+            user_id=config['user_id']
         )
         yield from _add_device(creds)
     else:
-        auth = NokiaAuth(consumer_key, consumer_secret)
         callback_uri = '{}{}'.format(
-            hass.config.api.base_url, NokiaAuthCallbackView.url)
-        authorize_url = auth.get_authorize_url(callback_uri=callback_uri)
+            hass.config.api.base_url, WithingsAuthCallbackView.url)
+        auth = NokiaAuth(
+            client_id,
+            consumer_secret,
+            callback_uri=callback_uri,
+            scope='user.info,user.metrics,user.activity'
+        )
+        authorize_url = auth.get_authorize_url()
 
         configurator = hass.components.configurator
         request_id = configurator.async_request_config(
-            "Nokia Health",
-            description="Authorization required for Nokia Health account.",
+            "Withings",
+            description="Authorization required for Withings account.",
             link_name="Authorize Home Assistant",
             link_url=authorize_url,
             entity_picture='/local/images/logo_nokia_health_mate.png')
 
     @asyncio.coroutine
-    def initialize_callback(oauth_verifier):
-        """Handle OAuth callback from Nokia authorization flow."""
-        creds = auth.get_credentials(oauth_verifier)
+    def initialize_callback(code):
+        """Handle OAuth callback from Withings authorization flow."""
+        creds = auth.get_credentials(code)
         yield from _write_config(creds)
         yield from _add_device(creds)
         configurator.async_request_done(request_id)
@@ -116,12 +136,12 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     return True
 
 
-class NokiaAuthCallbackView(HomeAssistantView):
+class WithingsAuthCallbackView(HomeAssistantView):
     """Web view that handles OAuth authentication and redirection flow."""
 
     requires_auth = False
-    url = '/api/nokia/callback'
-    name = 'api:nokia:callback'
+    url = '/api/withings/callback'
+    name = 'api:withings:callback'
 
     @callback
     def get(self, request):  # pylint: disable=no-self-use
@@ -130,34 +150,38 @@ class NokiaAuthCallbackView(HomeAssistantView):
         params = request.query
         response = web.HTTPFound('/states')
 
-        if 'oauth_verifier' not in params:
+        if 'code' not in params:
             _LOGGER.error(
-                "Error authorizing to Nokia Health: %s",
+                "Error authorizing to Withings: %s",
                 params.get('error', 'invalid response'))
         elif DATA_CALLBACK not in hass.data:
             _LOGGER.error("Configuration request not found")
         else:
-            oauth_verifier = params['oauth_verifier']
+            _LOGGER.debug('Params: {}'.format(params))
+            code = params['code']
             initialize_callback = hass.data[DATA_CALLBACK]
-            hass.async_add_job(initialize_callback(oauth_verifier))
+            hass.async_add_job(initialize_callback(code))
 
         return response
 
 
-class NokiaSensor(Entity):
-    """Sensor component for Nokia Health measurements."""
+class WithingsSensor(Entity):
+    """Sensor component for Withings measurements."""
 
-    def __init__(self, hass: HomeAssistantType, nokia_client):
-        """Initialize the Nokia Health sensor."""
+    def __init__(self, hass: HomeAssistantType, withings_client):
+        """Initialize the Withings sensor."""
         self.hass = hass
-        self._client = nokia_client
+        self._client = withings_client
         self._measures = None
 
-        user_id = self._client.credentials.user_id
-        user = self._client.get_user()['users'][0]
-        self._name = '{} {}'.format(user['firstname'], user['lastname'])
+        r = self._client.request('user', 'getdevice', version='v2')
+        device = r['devices'][0]
+        self._name = device['model']
         self.entity_id = async_generate_entity_id(
-            ENTITY_ID_FORMAT, 'nokia_{}'.format(user_id), hass=hass)
+            ENTITY_ID_FORMAT,
+            'withings_{}'.format(device['deviceid']),
+            hass=hass
+        )
 
     @property
     def name(self):
@@ -197,10 +221,10 @@ class NokiaSensor(Entity):
 
     @asyncio.coroutine
     def async_get_measures(self):
-        """Fetch measurements from Nokia Health."""
+        """Fetch measurements from Withings."""
         return self.hass.async_add_job(self._client.get_measures)
 
     @asyncio.coroutine
     def async_update(self):
-        """Get the latest measurements from the Nokia Health API."""
+        """Get the latest measurements from the Withings API."""
         self._measures = (yield from self.async_get_measures())[0]

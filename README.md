@@ -4,7 +4,7 @@
 
 #### Installation
 
-- Copy `sensor/questrade.py` to `/config/custom_components/sensor/questrade.py`.
+- Copy `components/questrade/sensor.py` to `/config/custom_components/questrade/sensor.py`.
 - Create an personal application on Questrade.
 - Fill the following configuration:
 
@@ -50,26 +50,26 @@ homeassistant:
 ```
 
 
-### Nokia Health (Withings) body measurements
+### Withings body measurements
 
 #### Installation
 
-- Copy `sensor/nokia_health.py` to `/config/custom_components/sensor/nokia_health.py`.
+- Copy `components/withings` to `/config/custom_components/withings`.
 - Copy the content of the `www` directory to `/config/www/`
-- Go to https://developer.health.nokia.com/partner/add to register a developer account and create a new app.
+- Go to https://account.withings.com/partner/add_oauth2 to register a developer account and create a new app.
 - Fill the following configuration:
 
 ```yaml
 sensor:
-  - platform: nokia_health
-    consumer_key: <Key ID>
-    consumer_secret: <Key Secret>
+  - platform: withings
+    client_id: <Client ID>
+    consumer_secret: <Consumer Secret>
 ```
 
 Configuration variables:
 
-- **consumer_key** (Required): The Nokia Health API key.
-- **consumer_secret** (Required): The Nokia Health API key secret.
+- **client_id** (Required): The Withings app Client ID.
+- **consumer_secret** (Required): The Withings app Consumer Secret.
 
 
 ### Strava athlete statistics
